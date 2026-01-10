@@ -3,6 +3,7 @@ services:
     image: ghcr.io/lanceyvang/webex-bot:latest
     container_name: webex-bot
     restart: unless-stopped
+    network_mode: host
     env_file:
       - .env
     labels:
