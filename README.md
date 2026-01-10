@@ -2,21 +2,35 @@
 
 A Webex Teams bot powered by Open WebUI for AI responses.
 
-## Quick Start
+## Quick Start (Local)
 
 1. **Install dependencies:**
    ```bash
    pip install -r requirements.txt
    ```
 
-2. **Configure `.env`** (already set up with your credentials)
+2. **Configure `.env`** with your credentials
 
 3. **Run the bot:**
    ```bash
    python bot.py
    ```
 
-4. **Chat with your bot in Webex!**
+## Docker Deployment
+
+1. **Clone and configure:**
+   ```bash
+   git clone https://github.com/lanceyvang/webex-bot.git
+   cd webex-bot
+   # Create .env with your credentials
+   ```
+
+2. **Start with Docker Compose:**
+   ```bash
+   docker compose up -d
+   ```
+
+3. **Auto-updates:** Watchtower will automatically update when you push changes.
 
 ## Commands
 
@@ -29,6 +43,7 @@ A Webex Teams bot powered by Open WebUI for AI responses.
 
 ## Files
 
-- `bot.py` - Main bot (run this)
+- `bot.py` - Main bot
 - `ai_client.py` - Open WebUI integration
 - `.env` - Your credentials (do not share!)
+- `docker-compose.yml` - Docker configuration
