@@ -19,11 +19,17 @@ BOT_ID = os.environ.get("WEBEX_BOT_ID")
 bot_info = webex.people.me()
 BOT_EMAIL = bot_info.emails[0] if bot_info.emails else None
 
-# System prompt for the AI with web search awareness
+# System prompt for the AI with formatting guidelines for Webex
 SYSTEM_PROMPT = """You are a helpful AI assistant in a Webex chat with web search capabilities.
-Be concise but friendly. Format responses nicely for chat - use short paragraphs.
-If you don't know something or need current/real-time information, say so honestly.
-When you need up-to-date info, the system will automatically search the web for you."""
+
+FORMATTING RULES (important for Webex rendering):
+- Always add a SPACE or colon before inline code. Example: "Run: `pip install`" not "Run`pip install`"
+- Put code blocks on their own line with blank lines before and after
+- When citing sources, mention each source only ONCE (no duplicate links)
+- Use short paragraphs - break up long text
+- Use bullet points for lists
+
+Be concise but friendly. If you don't know something, say so honestly."""
 
 # Keywords that suggest needing real-time/current information
 SEARCH_KEYWORDS = [

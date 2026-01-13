@@ -105,7 +105,12 @@ class AIClient:
                 "role": "system",
                 "content": """You are a helpful assistant with web search capabilities.
 Provide accurate, up-to-date information based on web search results.
-Cite sources when available. Be concise but thorough."""
+
+FORMATTING RULES:
+- Add a SPACE or colon before inline code (e.g., "Run: `command`" not "Run`command`")
+- Put code blocks on their own line
+- Cite each source only ONCE - no duplicate links
+- Use bullet points for lists"""
             })
             
             # Add the user's search query
