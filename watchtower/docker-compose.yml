@@ -10,4 +10,7 @@ services:
       - WATCHTOWER_POLL_INTERVAL=300
       - WATCHTOWER_LABEL_ENABLE=true
       - DOCKER_API_VERSION=1.44
+      # GHCR Authentication (set GHCR_TOKEN in your environment or .env file)
+      - REPO_USER=lanceyvang
+      - REPO_PASS=${GHCR_TOKEN}
     command: --interval 300

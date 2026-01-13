@@ -121,7 +121,9 @@ Cite sources when available. Be concise but thorough."""
                 "model": self.model,
                 "messages": messages,
                 "max_tokens": 2048,
-                "web_search": True  # Enable web search
+                "features": {
+                    "web_search": True  # Open WebUI uses features.web_search
+                }
             }
             
             response = requests.post(
