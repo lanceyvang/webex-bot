@@ -42,16 +42,29 @@ def process_message(message_id: str):
         )
         
         # Handle special commands
-        if message.text.strip().lower() == "/clear":
+        text = message.text.strip()
+        text_lower = text.lower()
+        
+        if text_lower == "/clear":
             ai.clear_history(message.roomId)
             response = "✓ Conversation history cleared!"
-        elif message.text.strip().lower() == "/help":
+        elif text_lower == "/help":
             response = """**Available Commands:**
 • Just type your message to chat with the AI
+• `/search <query>` - 🔍 Web search for real-time info
 • `/clear` - Clear conversation history
 • `/help` - Show this help message
 • `/models` - List available AI models"""
-        elif message.text.strip().lower() == "/models":
+        elif text_lower.startswith("/search"):
+            # Extract search query
+            query = text[7:].strip()  # Remove "/search" prefix
+            if not query:
+                response = "❌ Please provide a search query. Example: `/search latest AI news`"
+            else:
+                response = "🔍 Searching the web...\n\n"
+                search_result = ai.search(query, room_id=message.roomId)
+                response += search_result
+        elif text_lower == "/models":
             models = ai.list_models()
             response = f"**Available Models:**\n" + "\n".join(f"• {m}" for m in models)
         

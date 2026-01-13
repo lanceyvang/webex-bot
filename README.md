@@ -16,21 +16,34 @@ A Webex Teams bot powered by Open WebUI for AI responses.
    python bot.py
    ```
 
-## Docker Deployment
+## Develop from Anywhere (Home/Work)
 
-1. **Clone and configure:**
-   ```bash
-   git clone https://github.com/lanceyvang/webex-bot.git
-   cd webex-bot
-   # Create .env with your credentials
-   ```
+Bot runs on your **work PC only**. From any other computer:
 
-2. **Start with Docker Compose:**
-   ```bash
-   docker compose up -d
-   ```
+```bash
+# One-time setup
+git clone https://github.com/lanceyvang/webex-bot.git
+cd webex-bot
 
-3. **Auto-updates:** Watchtower will automatically update when you push changes.
+# Make changes, then push
+git add .
+git commit -m "Your changes"
+git push
+
+# Watchtower on work PC auto-deploys!
+```
+
+**No Docker needed** - just Git.
+
+## Docker Deployment (Work PC Only)
+
+```bash
+# Initial setup
+git clone https://github.com/lanceyvang/webex-bot.git
+cd webex-bot
+# Create .env with your credentials
+docker compose up -d
+```
 
 ## Commands
 

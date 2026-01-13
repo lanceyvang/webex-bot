@@ -1,8 +1,10 @@
 """
 Open WebUI AI Client
 Connects to your Open WebUI instance to get AI responses.
+Supports web search via Open WebUI's native search integration.
 """
 import os
+import requests
 from openai import OpenAI
 from dotenv import load_dotenv
 
@@ -80,6 +82,81 @@ class AIClient:
         except Exception as e:
             return f"Sorry, I encountered an error: {str(e)}"
     
+    def search(self, query: str, room_id: str = None) -> str:
+        """
+        Perform a web search and return AI-synthesized results.
+        
+        Uses Open WebUI's native web search feature to fetch real-time
+        information from the internet.
+        
+        Args:
+            query: The search query
+            room_id: Optional room ID to maintain conversation history
+            
+        Returns:
+            AI-synthesized response with web search results
+        """
+        try:
+            # Build messages for the search request
+            messages = []
+            
+            # Add system prompt for search context
+            messages.append({
+                "role": "system",
+                "content": """You are a helpful assistant with web search capabilities.
+Provide accurate, up-to-date information based on web search results.
+Cite sources when available. Be concise but thorough."""
+            })
+            
+            # Add the user's search query
+            messages.append({"role": "user", "content": query})
+            
+            # Make direct API call with web_search_options enabled
+            headers = {
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json"
+            }
+            
+            payload = {
+                "model": self.model,
+                "messages": messages,
+                "max_tokens": 2048,
+                "web_search": True  # Enable web search
+            }
+            
+            response = requests.post(
+                f"{self.base_url}/chat/completions",
+                headers=headers,
+                json=payload,
+                timeout=60  # Longer timeout for web search
+            )
+            
+            if response.status_code != 200:
+                # Fallback to standard chat if web search fails
+                return self.chat(
+                    f"Please search for: {query}",
+                    room_id=room_id
+                )
+            
+            result = response.json()
+            assistant_message = result["choices"][0]["message"]["content"]
+            
+            # Store in conversation history if tracking
+            if room_id:
+                if room_id not in self.conversations:
+                    self.conversations[room_id] = []
+                self.conversations[room_id].append({"role": "user", "content": f"[Web Search] {query}"})
+                self.conversations[room_id].append({"role": "assistant", "content": assistant_message})
+                
+                # Keep only last 20 messages
+                if len(self.conversations[room_id]) > 20:
+                    self.conversations[room_id] = self.conversations[room_id][-20:]
+            
+            return assistant_message
+            
+        except Exception as e:
+            return f"Sorry, web search failed: {str(e)}. Try a regular chat instead."
+    
     def clear_history(self, room_id: str):
         """Clear conversation history for a room."""
         if room_id in self.conversations:
@@ -98,6 +175,9 @@ if __name__ == "__main__":
     # Quick test
     client = AIClient()
     print("Available models:", client.list_models())
-    print("\nTest response:")
+    print("\nTest chat response:")
     response = client.chat("Hello! What's 2+2?")
     print(response)
+    print("\nTest web search:")
+    search_response = client.search("What is the latest news today?")
+    print(search_response)
