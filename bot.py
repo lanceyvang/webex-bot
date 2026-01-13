@@ -1,8 +1,9 @@
 """
 Webex Bot - AI-Powered Chat Bot
-Connects to Open WebUI for AI responses.
+Connects to Open WebUI for AI responses with smart web search.
 """
 import os
+import re
 from dotenv import load_dotenv
 from webexteamssdk import WebexTeamsAPI
 from ai_client import AIClient
@@ -18,10 +19,74 @@ BOT_ID = os.environ.get("WEBEX_BOT_ID")
 bot_info = webex.people.me()
 BOT_EMAIL = bot_info.emails[0] if bot_info.emails else None
 
-# System prompt for the AI
-SYSTEM_PROMPT = """You are a helpful AI assistant in a Webex chat. 
+# System prompt for the AI with web search awareness
+SYSTEM_PROMPT = """You are a helpful AI assistant in a Webex chat with web search capabilities.
 Be concise but friendly. Format responses nicely for chat - use short paragraphs.
-If you don't know something, say so honestly."""
+If you don't know something or need current/real-time information, say so honestly.
+When you need up-to-date info, the system will automatically search the web for you."""
+
+# Keywords that suggest needing real-time/current information
+SEARCH_KEYWORDS = [
+    # Time-sensitive
+    'latest', 'current', 'today', 'now', 'recent', 'new', 'update',
+    'this week', 'this month', 'this year', '2024', '2025', '2026',
+    # News & events  
+    'news', 'headline', 'breaking', 'announced', 'release', 'launched',
+    # Real-time data
+    'weather', 'forecast', 'temperature', 'stock', 'price', 'score',
+    'status', 'outage', 'down', 'working',
+    # Research/lookup
+    'how to', 'what is', 'who is', 'when did', 'where is',
+    'documentation', 'docs', 'guide', 'tutorial', 'article',
+    # Tech support specific
+    'error', 'fix', 'solve', 'troubleshoot', 'issue', 'problem',
+    'not working', 'broken', 'failed', 'help me',
+]
+
+# Patterns suggesting user is struggling/confused
+STRUGGLE_PATTERNS = [
+    r'\?\s*\?+',              # Multiple question marks
+    r'still (not|doesn\'t|won\'t|can\'t)',  # Still having issues
+    r'tried (everything|that|already)',      # Tried things
+    r'nothing (works|worked)',               # Nothing works
+    r'i (don\'t|cant|cannot) (understand|figure|get)',  # Confusion
+    r'(please|plz) help',                    # Asking for help
+    r'what (else|now)',                      # What else to try
+    r'any (other|idea|suggestion)',          # Looking for alternatives
+]
+
+
+def should_use_web_search(text: str, room_id: str = None) -> bool:
+    """
+    Determine if the message should trigger automatic web search.
+    
+    Checks for:
+    1. Keywords suggesting need for current/real-time info
+    2. Patterns suggesting user is struggling
+    3. Questions that likely need external lookup
+    """
+    text_lower = text.lower()
+    
+    # Check for search keywords
+    for keyword in SEARCH_KEYWORDS:
+        if keyword in text_lower:
+            print(f"  🔍 Auto-search triggered by keyword: '{keyword}'")
+            return True
+    
+    # Check for struggle patterns
+    for pattern in STRUGGLE_PATTERNS:
+        if re.search(pattern, text_lower):
+            print(f"  🔍 Auto-search triggered by struggle pattern")
+            return True
+    
+    # Check if it's a question about something specific
+    if '?' in text and len(text) > 20:
+        # Questions with specific proper nouns or tech terms
+        if re.search(r'(how|what|why|when|where|can|does|is|are)\s+(the|a|my|this|it)', text_lower):
+            print(f"  🔍 Auto-search triggered by detailed question")
+            return True
+    
+    return False
 
 
 def process_message(message_id: str):
@@ -34,14 +99,7 @@ def process_message(message_id: str):
         if message.personEmail == BOT_EMAIL:
             return
         
-        # Get AI response with conversation history per room
-        response = ai.chat(
-            message=message.text,
-            room_id=message.roomId,
-            system_prompt=SYSTEM_PROMPT
-        )
-        
-        # Handle special commands
+        # Handle special commands first
         text = message.text.strip()
         text_lower = text.lower()
         
@@ -50,14 +108,16 @@ def process_message(message_id: str):
             response = "✓ Conversation history cleared!"
         elif text_lower == "/help":
             response = """**Available Commands:**
-• Just type your message to chat with the AI
-• `/search <query>` - 🔍 Web search for real-time info
+• Just type your message - AI auto-searches when needed 🔍
+• `/search <query>` - Force a web search
 • `/clear` - Clear conversation history
 • `/help` - Show this help message
-• `/models` - List available AI models"""
+• `/models` - List available AI models
+
+💡 *Web search activates automatically for current events, troubleshooting, and when you need real-time info!*"""
         elif text_lower.startswith("/search"):
-            # Extract search query
-            query = text[7:].strip()  # Remove "/search" prefix
+            # Explicit search command
+            query = text[7:].strip()
             if not query:
                 response = "❌ Please provide a search query. Example: `/search latest AI news`"
             else:
@@ -67,6 +127,19 @@ def process_message(message_id: str):
         elif text_lower == "/models":
             models = ai.list_models()
             response = f"**Available Models:**\n" + "\n".join(f"• {m}" for m in models)
+        else:
+            # Regular message - check if we should auto-search
+            if should_use_web_search(text, message.roomId):
+                response = "🔍 *Searching for current info...*\n\n"
+                search_result = ai.search(text, room_id=message.roomId)
+                response += search_result
+            else:
+                # Standard AI response
+                response = ai.chat(
+                    message=text,
+                    room_id=message.roomId,
+                    system_prompt=SYSTEM_PROMPT
+                )
         
         # Send the response with markdown formatting
         webex.messages.create(
